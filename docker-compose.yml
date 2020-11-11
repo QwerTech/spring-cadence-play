@@ -1,0 +1,41 @@
+version: '3'
+services:
+  cassandra:
+    image: cassandra:3.11
+    volumes:
+    - ~/data:/opt/cassandra/data:rw
+    - ~/data1:/var/lib/cassandra/data:rw
+    - ~/data2:/var/lib/cassandra/commitlog:rw
+    - ~/data3:/var/lib/cassandra/saved_caches:rw
+    - ~/data4:/var/lib/cassandra/hints:rw
+    ports:
+      - "9042:9042"
+  statsd:
+    image: hopsoft/graphite-statsd
+    ports:
+      - "8080:80"
+      - "2003:2003"
+      - "8125:8125"
+      - "8126:8126"
+  cadence:
+    image: ubercadence/server:0.11.0-auto-setup
+    ports:
+     - "17933:7933"
+     - "17934:7934"
+     - "17935:7935"
+     - "17939:7939"
+    environment:
+      - "CASSANDRA_SEEDS=cassandra"
+      - "STATSD_ENDPOINT=statsd:8125"
+      - "DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml"
+    depends_on:
+      - cassandra
+      - statsd
+  cadence-web:
+    image: ubercadence/web:3.4.1
+    environment:
+      - "CADENCE_TCHANNEL_PEERS=cadence:7933"
+    ports:
+      - "8088:8088"
+    depends_on:
+      - cadence
